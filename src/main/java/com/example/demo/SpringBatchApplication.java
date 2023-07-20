@@ -16,6 +16,10 @@ import org.springframework.batch.core.job.DefaultJobParametersValidator;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 import org.springframework.batch.core.scope.context.ChunkContext;
+import org.springframework.batch.core.step.tasklet.CallableTaskletAdapter;
+import org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter;
+import org.springframework.batch.core.step.tasklet.SimpleSystemProcessExitCodeMapper;
+import org.springframework.batch.core.step.tasklet.SystemCommandTasklet;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,14 +30,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import com.example.demo.incrementer.DailyJobTimestamper;
 import com.example.demo.listener.JobLoggerListener;
+import com.example.demo.service.CustomService;
 import com.example.demo.tasklet.GoodByeTasklet;
 import com.example.demo.tasklet.HelloTasklet;
 import com.example.demo.validator.ParameterValidator;
+import lombok.extern.slf4j.Slf4j;
 
 @SpringBootApplication
 @EnableBatchProcessing
+@Slf4j
 public class SpringBatchApplication {
 
     @Autowired
@@ -41,6 +49,9 @@ public class SpringBatchApplication {
 
     @Autowired
     private StepBuilderFactory stepBuilderFactory;
+
+    @Autowired
+    CustomService customService;
 
     public static void main(String[] args) {
         SpringApplication.run(SpringBatchApplication.class, args);
@@ -50,8 +61,11 @@ public class SpringBatchApplication {
     @Bean
     public Step step1() {
         return this.stepBuilderFactory.get("step1")
-                .tasklet(new HelloTasklet())
-//                .listener(promotionListener())
+                // .tasklet(new HelloTasklet())
+                // .tasklet(callableTasklet())
+//                .tasklet(methodInvokingTaskletAdapter())
+                .tasklet(systemCommandTasklet())
+                // .listener(promotionListener())
                 .build();
     }
 
@@ -114,8 +128,8 @@ public class SpringBatchApplication {
 
         return validator;
     }
-    
-    
+
+
     /**
      * step이 완료된 후에 step의 executionContext를 job executionContext로 승격
      * 
@@ -123,10 +137,74 @@ public class SpringBatchApplication {
      */
     @Bean
     public StepExecutionListener promotionListener() {
-        ExecutionContextPromotionListener promotionListener = new ExecutionContextPromotionListener();
+        ExecutionContextPromotionListener promotionListener =
+                new ExecutionContextPromotionListener();
         promotionListener.setKeys(new String[] {"user.name2"});
-        
+
         return promotionListener;
+    }
+
+    /**
+     * Callable객체가 유효한 RepeatStatus 객체를 반환하기 전까지는 완료된것으로 간주하지 않아, 다른 스텝은 실행되지 않음. 따라서 별개의 스레드에서
+     * 실행되지만 병렬로 실행되는 것은 아님
+     * 
+     * @return
+     */
+//    @Bean
+//    public CallableTaskletAdapter callableTasklet() {
+//        CallableTaskletAdapter callableTaskletAdapter = new CallableTaskletAdapter();
+//        log.info("call 전" + Thread.currentThread().getId());
+//        callableTaskletAdapter.setCallable(() -> {
+//            log.info("This was executed in another thread" + Thread.currentThread().getId());
+//            return RepeatStatus.FINISHED;
+//        });
+//        log.info("call 후" + Thread.currentThread().getId());
+//        return callableTaskletAdapter;
+//    }
+
+    /**
+     * 기존에 존재하던 다른 클래스 내의 메서드를 잡 내의 태스크릿처럼 실행 가능
+     * 
+     * @return
+     */
+    @Bean
+    public MethodInvokingTaskletAdapter methodInvokingTaskletAdapter() {
+        MethodInvokingTaskletAdapter methodInvokingTaskletAdapter =
+                new MethodInvokingTaskletAdapter();
+
+        methodInvokingTaskletAdapter.setTargetMethod("serviceMethod");
+        methodInvokingTaskletAdapter.setTargetObject(customService);
+
+        return methodInvokingTaskletAdapter;
+    }
+
+
+    /**
+     * 시스템 명령을 실행할 때 사용 비동기로 실행
+     * 
+     * @return
+     */
+    @Bean
+    public SystemCommandTasklet systemCommandTasklet() {
+        log.info("system command tasklet");
+        SystemCommandTasklet systemCommandTasklet = new SystemCommandTasklet();
+
+        systemCommandTasklet.setCommand("fsutil file createnew 1.txt 0");
+        systemCommandTasklet.setTimeout(5000); 
+        systemCommandTasklet.setInterruptOnCancel(true); // job이 비정상 적으로 종료될 때 시스템 프로세스와 관련된 스레드 강제 종료 여부
+        
+        // change this directory to something appropriate for your environment
+        systemCommandTasklet.setWorkingDirectory("C:\\Temp"); // 명령을 실행할 디렉터리 . cd ~/로 들어가는것과 같음
+        
+        systemCommandTasklet.setSystemProcessExitCodeMapper(new SimpleSystemProcessExitCodeMapper()); // 시스템 반환 코드 -> Finished or Failed
+        systemCommandTasklet.setTerminationCheckInterval(5000); // 시스템 명령은 비동기 방식으로 실행되는데, 명령이후에 테스크릿은 해당 명령의 완료 여부를 주기적으로 확인. default는 1초
+        systemCommandTasklet.setTaskExecutor(new SimpleAsyncTaskExecutor()); // 시스템 명령을 실행하는 custom task executor를 구성 할 수 있다. 시스템 명령에 문제가 발생한다면 job에 lock이 걸릴 수 있으므로 동기식 task executor를 구성하지 않는것이 좋다.
+        systemCommandTasklet.setEnvironmentParams(new String[] { // 명령 실행 전 설정하는 환경 파라미터 목록
+           "JAVA_HOME=/java",
+           "BATCH_HOME=/User/batch"
+        });
+
+        return systemCommandTasklet;
     }
 
 }

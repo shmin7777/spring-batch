@@ -30,4 +30,10 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 1
       connection-test-query: SELECT 1 FROM DUAL
-      
+
+logging:
+  level:
+    root: INFO
+#    kr.co.openlabs.example: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{GLOBALID}-%X{BRANCHID}] %logger{36} [%4L] - %m%n"
