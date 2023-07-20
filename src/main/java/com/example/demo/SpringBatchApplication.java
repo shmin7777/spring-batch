@@ -25,6 +25,7 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import com.example.demo.incrementer.DailyJobTimestamper;
+import com.example.demo.listener.JobLoggerListener;
 import com.example.demo.validator.ParameterValidator;
 
 @SpringBootApplication
@@ -56,6 +57,7 @@ public class SpringBatchApplication {
                 .validator(validator())
 //                .incrementer(new RunIdIncrementer())
                 .incrementer(new DailyJobTimestamper())
+                .listener(new JobLoggerListener())
                 .build();
     }
 
