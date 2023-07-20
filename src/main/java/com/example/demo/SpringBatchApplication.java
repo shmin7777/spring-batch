@@ -6,6 +6,7 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParametersValidator;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepContribution;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -13,6 +14,7 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.CompositeJobParametersValidator;
 import org.springframework.batch.core.job.DefaultJobParametersValidator;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
@@ -26,6 +28,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import com.example.demo.incrementer.DailyJobTimestamper;
 import com.example.demo.listener.JobLoggerListener;
+import com.example.demo.tasklet.GoodByeTasklet;
+import com.example.demo.tasklet.HelloTasklet;
 import com.example.demo.validator.ParameterValidator;
 
 @SpringBootApplication
@@ -44,33 +48,43 @@ public class SpringBatchApplication {
 
 
     @Bean
-    public Step step() {
+    public Step step1() {
         return this.stepBuilderFactory.get("step1")
-                .tasklet(helloTasklet(null)).build();
+                .tasklet(new HelloTasklet())
+//                .listener(promotionListener())
+                .build();
+    }
+
+    @Bean
+    public Step step2() {
+        return this.stepBuilderFactory.get("step2")
+                .tasklet(new GoodByeTasklet())
+                .build();
     }
 
     @Bean
     public Job job() {
         return this.jobBuilderFactory
                 .get("job")
-                .start(step())
+                .start(step1())
+                .next(step2())
                 .validator(validator())
-//                .incrementer(new RunIdIncrementer())
+                // .incrementer(new RunIdIncrementer())
                 .incrementer(new DailyJobTimestamper())
                 .listener(new JobLoggerListener())
                 .build();
     }
 
-    @Bean
-    @StepScope
-    public Tasklet helloTasklet(@Value("#{jobParameters['name']}") String name) {
-        return (contribution, chunkContext) -> {
-
-            System.out.println(String.format("Hello, %s!", name));
-
-            return RepeatStatus.FINISHED;
-        };
-    }
+    // @Bean
+    // @StepScope
+    // public Tasklet helloTasklet(@Value("#{jobParameters['name']}") String name) {
+    // return (contribution, chunkContext) -> {
+    //
+    // System.out.println(String.format("Hello, %s!", name));
+    //
+    // return RepeatStatus.FINISHED;
+    // };
+    // }
 
     @Bean
     public DefaultJobParametersValidator defaultValidator() {
@@ -79,8 +93,8 @@ public class SpringBatchApplication {
         // run.id : job parameter 증가 시키는 id
         DefaultJobParametersValidator validator = new DefaultJobParametersValidator();
         validator.setRequiredKeys(new String[] {"fileName"});
-//        validator.setOptionalKeys(new String[] {"name", "run.id"}); 
-        validator.setOptionalKeys(new String[] {"name", "currentDate"}); 
+        // validator.setOptionalKeys(new String[] {"name", "run.id"});
+        validator.setOptionalKeys(new String[] {"name", "currentDate"});
         return validator;
     }
 
@@ -101,4 +115,18 @@ public class SpringBatchApplication {
         return validator;
     }
     
+    
+    /**
+     * step이 완료된 후에 step의 executionContext를 job executionContext로 승격
+     * 
+     * @return
+     */
+    @Bean
+    public StepExecutionListener promotionListener() {
+        ExecutionContextPromotionListener promotionListener = new ExecutionContextPromotionListener();
+        promotionListener.setKeys(new String[] {"user.name2"});
+        
+        return promotionListener;
+    }
+
 }
