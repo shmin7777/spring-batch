@@ -23,7 +23,7 @@ public class RestApplication {
 
     @Bean
     public Job job() {
-        return this.jobBuilderFactory.get("job")
+        return this.jobBuilderFactory.get("quartzJob")
                 .incrementer(new RunIdIncrementer())
                 .start(step1())
                 .build();
