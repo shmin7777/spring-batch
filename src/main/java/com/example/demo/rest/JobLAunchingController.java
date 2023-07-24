@@ -34,7 +34,7 @@ public class JobLAunchingController {
 
             JobParameters jobParameters =
                     new JobParametersBuilder(request.getJobParameters(), jobExplorer)
-                            .getNextJobParameters(beforeJob)
+//                            .getNextJobParameters(beforeJob)
                             .toJobParameters();
 
             try {
@@ -46,7 +46,7 @@ public class JobLAunchingController {
 
         JobParameters jobParameters =
                 new JobParametersBuilder(request.getJobParameters(), jobExplorer)
-                        .getNextJobParameters(job)
+//                        .getNextJobParameters(job)
                         .toJobParameters();
 
         return this.jobLauncher.run(job, jobParameters).getExitStatus();
