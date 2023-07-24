@@ -24,9 +24,18 @@ public class RestApplication {
     @Bean
     public Job job() {
         return this.jobBuilderFactory.get("job")
-//                .incrementer(new RunIdIncrementer())
+                .incrementer(new RunIdIncrementer())
 //                .preventRestart()
                 .start(step1())
+                .build();
+    }
+    
+    @Bean
+    public Job job2() {
+        return this.jobBuilderFactory.get("job2")
+                .incrementer(new RunIdIncrementer())
+//                .preventRestart()
+                .start(step2())
                 .build();
     }
 
@@ -37,6 +46,18 @@ public class RestApplication {
                 .allowStartIfComplete(true)
                 .tasklet((contribution, chunkContext) -> {
                     System.out.println("step 1 ran today!!");
+                    return RepeatStatus.FINISHED;
+//                    throw new RuntimeException();
+                }).build();
+    }
+    
+    @Bean
+    public Step step2() {
+        return this.stepBuilderFactory.get("step2")
+//                .startLimit(3)
+                .allowStartIfComplete(true)
+                .tasklet((contribution, chunkContext) -> {
+                    System.out.println("step 2 ran today!!");
                     return RepeatStatus.FINISHED;
 //                    throw new RuntimeException();
                 }).build();

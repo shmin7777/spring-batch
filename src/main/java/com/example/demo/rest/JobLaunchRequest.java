@@ -12,6 +12,10 @@ public class JobLaunchRequest {
     @Getter
     private String name;
 
+    @Getter
+    @Setter
+    private String beforeName;
+    
     private Properties jobParameters;
 
     public Properties getJobParamsProperties() {
