@@ -7,10 +7,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import lombok.extern.slf4j.Slf4j;
 
 @SpringBootApplication
 @EnableBatchProcessing
+@EnableScheduling
 @Slf4j
 public class SpringBatchApplication  implements CommandLineRunner {
 
