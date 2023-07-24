@@ -23,8 +23,9 @@ public class RestApplication {
 
     @Bean
     public Job job() {
-        return this.jobBuilderFactory.get("quartzJob")
-                .incrementer(new RunIdIncrementer())
+        return this.jobBuilderFactory.get("job")
+//                .incrementer(new RunIdIncrementer())
+//                .preventRestart()
                 .start(step1())
                 .build();
     }
@@ -32,9 +33,12 @@ public class RestApplication {
     @Bean
     public Step step1() {
         return this.stepBuilderFactory.get("step1")
+//                .startLimit(3)
+                .allowStartIfComplete(true)
                 .tasklet((contribution, chunkContext) -> {
                     System.out.println("step 1 ran today!!");
                     return RepeatStatus.FINISHED;
+//                    throw new RuntimeException();
                 }).build();
     }
 

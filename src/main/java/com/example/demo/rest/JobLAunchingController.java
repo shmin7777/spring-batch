@@ -28,9 +28,10 @@ public class JobLAunchingController {
     public ExitStatus runJob(@RequestBody JobLaunchRequest request)
             throws Exception {
         Job job = this.context.getBean(request.getName(), Job.class);
-
+        
         JobParameters jobParameters = new JobParametersBuilder(request.getJobParameters(), jobExplorer)
-                .getNextJobParameters(job).toJobParameters();
+//                .getNextJobParameters(job)
+                .toJobParameters();
 
         return this.jobLauncher.run(job, jobParameters).getExitStatus();
     }
