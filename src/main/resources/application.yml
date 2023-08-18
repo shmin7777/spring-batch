@@ -17,10 +17,20 @@ server:
 #    password:  # H2 접속 시 입력할 password 정보 (원하는 것으로 입력)
 ##
 spring:
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+    hibernate:
+      ddl-auto: update
+      naming:
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
   batch:
-    job:
+#    job:
 #      names: ${job.name:NONE}
-      enabled: false
+#      enabled: false
     jdbc:
       initialize-schema: always
   quartz:

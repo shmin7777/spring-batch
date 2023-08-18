@@ -13,7 +13,9 @@
 //import org.springframework.batch.core.repository.JobRestartException;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.scheduling.quartz.QuartzJobBean;
+//import lombok.extern.slf4j.Slf4j;
 //
+//@Slf4j
 //public class BatchScheduledJob extends QuartzJobBean {
 //
 //    @Autowired
@@ -31,6 +33,7 @@
 //        JobParameters jobParameters = new JobParametersBuilder(this.jobExplorer)
 //                .getNextJobParameters(job).toJobParameters();
 //
+//        log.info("batch job 실행!!!!");
 //        try {
 //            this.jobLauncher.run(job, jobParameters);
 //        } catch (JobExecutionAlreadyRunningException | JobRestartException
