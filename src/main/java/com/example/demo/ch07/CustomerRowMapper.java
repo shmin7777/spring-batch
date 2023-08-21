@@ -9,7 +9,7 @@ public class CustomerRowMapper implements RowMapper<Customer> {
     @Override
     public Customer mapRow(ResultSet rs, int rowNum) throws SQLException {
         Customer customer = new Customer();
-        customer.setId(rs.getLong("id"));
+        // customer.setId( q rs.getLong("id"));
         customer.setAddress(rs.getString("address"));
         customer.setCity(rs.getString("city"));
         customer.setFirstName(rs.getString("firstName"));
